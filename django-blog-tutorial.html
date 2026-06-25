@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Django Blog — Tutorial Interactivo</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,700;1,9..144,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0F1117;--surface:#181C27;--surface2:#1E2433;--surface3:#252B3B;
+  --border:rgba(255,255,255,0.07);--border-strong:rgba(255,255,255,0.14);
+  --text:#E8EAF0;--muted:#8B91A8;--muted2:#6B7280;
+  --accent:#5B8FFF;--accent-dim:rgba(91,143,255,0.13);
+  --teal:#4ECDC4;--teal-dim:rgba(78,205,196,0.11);
+  --amber:#F5A623;--amber-dim:rgba(245,166,35,0.11);
+  --green:#52D284;--green-dim:rgba(82,210,132,0.11);
+  --red:#FF6B6B;--red-dim:rgba(255,107,107,0.12);
+  --purple:#A78BFA;--purple-dim:rgba(167,139,250,0.12);
+  --gold:#FFD700;
+  --r:12px;--rs:7px;--mono:'JetBrains Mono',monospace;
+}
+html{scroll-behavior:smooth;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);line-height:1.65;overflow-x:hidden;}
+
+/* ── HUD BAR ── */
+#hud{position:fixed;top:0;left:0;right:0;z-index:200;height:52px;background:rgba(15,17,23,.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1.25rem;gap:1rem;}
+.hud-logo{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent);white-space:nowrap;}
+.hud-logo span{color:var(--text);}
+.hud-prog-wrap{flex:1;display:flex;flex-direction:column;gap:3px;max-width:340px;}
+.hud-prog-bar{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;}
+.hud-prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--teal));border-radius:3px;transition:width .5s ease;}
+.hud-prog-label{font-size:10px;color:var(--muted);font-weight:500;}
+.hud-right{display:flex;align-items:center;gap:.65rem;margin-left:auto;}
+.hud-stat{display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border-strong);border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600;}
+.hud-stat .ico{font-size:13px;}
+#xp-count{color:var(--amber);}
+#badge-count{color:var(--purple);}
+#streak-count{color:var(--red);}
+
+/* ── HERO ── */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6rem 1.5rem 4rem;text-align:center;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 30%,rgba(91,143,255,.07) 0%,transparent 70%);pointer-events:none;}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:7px;background:var(--accent-dim);border:1px solid rgba(91,143,255,.22);color:var(--accent);font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;padding:5px 14px;border-radius:50px;margin-bottom:1.5rem;}
+.hero h1{font-family:'Fraunces',serif;font-size:clamp(2.6rem,6vw,4.2rem);font-weight:700;line-height:1.08;color:#fff;margin-bottom:1rem;}
+.hero h1 em{font-style:italic;color:var(--accent);}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:500px;margin:0 auto 2.5rem;}
+
+/* STATS ROW */
+.stats-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:2.5rem;}
+.stat-pill{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border-strong);border-radius:50px;padding:8px 16px;font-size:13px;font-weight:600;}
+.stat-pill .dot{width:8px;height:8px;border-radius:50%;}
+.dot-blue{background:var(--accent);}
+.dot-teal{background:var(--teal);}
+.dot-amber{background:var(--amber);}
+
+.hero-cta{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;font-weight:700;font-size:15px;padding:14px 28px;border-radius:50px;text-decoration:none;cursor:pointer;border:none;transition:transform .2s,box-shadow .2s;box-shadow:0 4px 24px rgba(91,143,255,.3);}
+.hero-cta:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(91,143,255,.4);}
+
+/* ── LAYOUT ── */
+.layout{display:grid;grid-template-columns:220px 1fr;max-width:1100px;margin:0 auto;padding:2rem 1.5rem 6rem;gap:2.5rem;align-items:start;}
+.sidebar{position:sticky;top:64px;}
+.sb-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted2);margin-bottom:.5rem;padding-left:10px;}
+.sb-nav{list-style:none;display:flex;flex-direction:column;gap:1px;}
+.sb-nav a{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--rs);font-size:12.5px;color:var(--muted);text-decoration:none;transition:all .15s;position:relative;}
+.sb-nav a:hover{background:var(--surface2);color:var(--text);}
+.sb-nav a.active{background:var(--accent-dim);color:var(--accent);font-weight:600;}
+.sb-num{width:19px;height:19px;border-radius:50%;background:var(--surface2);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);}
+.sb-nav a.active .sb-num{background:var(--accent);color:#fff;}
+.sb-check{margin-left:auto;font-size:11px;color:var(--green);display:none;}
+.sb-nav a.done .sb-check{display:block;}
+.sb-nav a.done .sb-num{background:var(--green);color:#1a2a1a;}
+
+/* XP popup */
+.xp-popup{position:fixed;top:64px;right:20px;z-index:300;background:var(--amber);color:#1a0f00;font-weight:700;font-size:13px;padding:8px 16px;border-radius:50px;pointer-events:none;opacity:0;transform:translateY(-10px);transition:all .3s;}
+.xp-popup.show{opacity:1;transform:translateY(0);}
+
+/* ── STEP SECTIONS ── */
+.step-section{margin-bottom:3.5rem;scroll-margin-top:64px;}
+.step-header{display:flex;align-items:flex-start;gap:1rem;margin-bottom:1.5rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border);}
+.step-num-badge{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#fff;flex-shrink:0;}
+.n1{background:var(--accent)}.n2{background:#8B6FFF}.n3{background:var(--teal);color:#0a2a29}.n4{background:var(--amber);color:#2a1a00}.n5{background:var(--green);color:#0a2a18}.n6{background:var(--red)}.n7{background:var(--purple)}.n8{background:var(--teal);color:#0a2a29}.n9{background:var(--amber);color:#2a1a00}.n10{background:var(--green);color:#0a2a18}.n11{background:var(--accent)}.n12{background:#8B6FFF}
+.step-meta-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted2);margin-bottom:3px;}
+.step-meta h2{font-family:'Fraunces',serif;font-size:1.55rem;font-weight:700;color:#fff;line-height:1.2;}
+.step-meta p{color:var(--muted);font-size:13.5px;margin-top:4px;}
+.step-xp-badge{margin-left:auto;display:flex;align-items:center;gap:5px;background:var(--amber-dim);border:1px solid rgba(245,166,35,.25);border-radius:50px;padding:5px 12px;font-size:12px;font-weight:700;color:var(--amber);white-space:nowrap;flex-shrink:0;}
+
+/* Text */
+.step-section>p{font-size:14.5px;color:var(--muted);margin-bottom:.9rem;line-height:1.75;}
+.step-section>h3{font-size:.95rem;font-weight:600;color:var(--text);margin:1.5rem 0 .6rem;display:flex;align-items:center;gap:7px;}
+.step-section>h3::before{content:'';display:inline-block;width:3px;height:12px;background:var(--accent);border-radius:2px;}
+
+/* Cards */
+.info-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem;margin:.9rem 0;}
+.info-card.tip{background:var(--accent-dim);border-color:rgba(91,143,255,.2);}
+.info-card.tip .cl{color:var(--accent);}
+.info-card.warn{background:var(--amber-dim);border-color:rgba(245,166,35,.2);}
+.info-card.warn .cl{color:var(--amber);}
+.info-card.ok{background:var(--green-dim);border-color:rgba(82,210,132,.2);}
+.info-card.ok .cl{color:var(--green);}
+.info-card.mission{background:var(--purple-dim);border-color:rgba(167,139,250,.25);}
+.info-card.mission .cl{color:var(--purple);}
+.cl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;margin-bottom:.4rem;display:flex;align-items:center;gap:5px;}
+.info-card p,.info-card li{font-size:13.5px;color:var(--muted);line-height:1.65;}
+.info-card ul{list-style:none;display:flex;flex-direction:column;gap:5px;}
+.info-card li::before{content:'→ ';color:var(--accent);}
+
+/* Code */
+.code-block{background:#0D1117;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin:.9rem 0;}
+.code-top{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:var(--surface2);border-bottom:1px solid var(--border);}
+.code-lang{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.05em;}
+.code-dots{display:flex;gap:4px;}
+.code-dots span{width:9px;height:9px;border-radius:50%;}
+.cd1{background:#FF5F57}.cd2{background:#FFBD2E}.cd3{background:#28C840}
+pre,code{font-family:var(--mono);}
+pre{padding:1rem 1.25rem;overflow-x:auto;line-height:1.7;font-size:12.5px;color:var(--text);}
+.kw{color:#79B8FF}.st{color:#9ECBFF}.cm{color:#6A737D;font-style:italic}.fn{color:#B392F0}.nm{color:#FFAB70}.op{color:var(--muted)}.pr{color:var(--teal)}
+.ic{font-family:var(--mono);font-size:12px;background:var(--surface2);border:1px solid var(--border-strong);border-radius:4px;padding:1px 5px;color:var(--teal);}
+
+/* Terminal */
+.terminal{background:#0D1117;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin:.9rem 0;}
+.t-bar{background:var(--surface2);padding:6px 12px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--border);}
+.t-dots{display:flex;gap:4px;}
+.t-dots span{width:9px;height:9px;border-radius:50%;}
+.t-label{font-family:var(--mono);font-size:10px;color:var(--muted2);font-weight:600;}
+.terminal pre{font-size:12.5px;line-height:1.7;}
+.tp{color:var(--green)}.tc{color:var(--text)}.to{color:var(--muted)}.th{color:var(--accent);}
+
+/* Concept grid */
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:.9rem 0;}
+.ccard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:.9rem 1rem;}
+.ccard .ico{font-size:1.3rem;margin-bottom:.35rem;}
+.ccard h4{font-size:13.5px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.ccard p{font-size:12.5px;color:var(--muted);line-height:1.55;}
+
+/* Link card */
+.link-card{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:.8rem 1.1rem;text-decoration:none;transition:border-color .2s,background .2s;margin:5px 0;}
+.link-card:hover{border-color:var(--accent);background:var(--accent-dim);}
+.lc-ico{font-size:1.4rem;flex-shrink:0;}
+.lc-txt strong{display:block;font-size:13px;font-weight:600;color:var(--text);}
+.lc-txt span{font-size:11.5px;color:var(--muted);}
+.lc-arr{margin-left:auto;color:var(--muted);font-size:16px;}
+
+/* Diagram */
+.diagram{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;margin:.9rem 0;overflow-x:auto;}
+.flow{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;}
+.fb{background:var(--surface2);border:1px solid var(--border-strong);border-radius:var(--rs);padding:8px 12px;font-size:12.5px;font-weight:500;color:var(--text);text-align:center;min-width:76px;}
+.fb.hl{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);}
+.fa{color:var(--muted);font-size:14px;}
+
+/* Deploy steps */
+.dsteps{display:flex;flex-direction:column;gap:0;}
+.dstep{display:flex;gap:.9rem;position:relative;}
+.dstep:not(:last-child)::before{content:'';position:absolute;left:15px;top:36px;bottom:0;width:1px;background:var(--border);}
+.ds-dot{width:31px;height:31px;border-radius:50%;background:var(--surface2);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:3px;color:var(--accent);z-index:1;}
+.ds-body{flex:1;padding-bottom:1.35rem;}
+.ds-body h4{font-size:14px;font-weight:600;color:var(--text);margin-bottom:.35rem;}
+.ds-body p{font-size:13px;color:var(--muted);line-height:1.6;}
+
+/* Sep */
+.sep{border:none;border-top:1px solid var(--border);margin:2.5rem 0;}
+
+/* ── QUIZ ── */
+.quiz-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem 1.4rem;margin:1.25rem 0;}
+.quiz-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--accent);margin-bottom:.5rem;display:flex;align-items:center;gap:6px;}
+.quiz-q{font-size:15px;font-weight:600;color:var(--text);margin-bottom:.9rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:7px;margin-bottom:.9rem;}
+.qopt{background:var(--surface2);border:1px solid var(--border-strong);border-radius:var(--rs);padding:9px 13px;font-size:13.5px;color:var(--text);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:9px;user-select:none;}
+.qopt:hover{border-color:var(--accent);color:var(--accent);}
+.qopt.correct{border-color:var(--green);background:var(--green-dim);color:var(--green);}
+.qopt.wrong{border-color:var(--red);background:var(--red-dim);color:var(--red);}
+.qopt.disabled{pointer-events:none;}
+.opt-l{width:21px;height:21px;border-radius:50%;background:var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.quiz-fb{font-size:13px;padding:7px 11px;border-radius:var(--rs);display:none;margin-bottom:.75rem;}
+.quiz-fb.show{display:block;}
+.quiz-fb.ok{background:var(--green-dim);color:var(--green);border:1px solid rgba(82,210,132,.2);}
+.quiz-fb.ko{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,107,107,.2);}
+.quiz-next{display:none;}
+.quiz-next.show{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.qnext-btn{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;font-weight:700;font-size:13px;padding:8px 18px;border-radius:8px;text-decoration:none;transition:opacity .2s;}
+.qnext-btn:hover{opacity:.85;}
+.xp-reward{font-size:12px;font-weight:700;color:var(--amber);display:flex;align-items:center;gap:4px;}
+
+/* ── LIVE EDITOR ── */
+.editor-wrap{background:#0D1117;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin:.9rem 0;}
+.editor-header{background:var(--surface2);padding:7px 13px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+.editor-title{font-size:11px;font-weight:600;color:var(--muted);font-family:var(--mono);}
+.editor-run{background:var(--green);color:#0a2a18;border:none;border-radius:5px;padding:5px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .2s;}
+.editor-run:hover{opacity:.85;}
+.editor-body{display:grid;grid-template-columns:1fr 1fr;}
+.editor-input{width:100%;background:transparent;border:none;border-right:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12.5px;padding:1rem 1.1rem;resize:none;outline:none;line-height:1.7;min-height:140px;}
+.editor-output{padding:1rem 1.1rem;font-family:var(--mono);font-size:12.5px;color:var(--muted);line-height:1.7;white-space:pre-wrap;overflow:auto;}
+.editor-output.has-output{color:var(--text);}
+.editor-output.error{color:var(--red);}
+.editor-split-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted2);padding:4px 1.1rem;background:var(--surface2);border-top:1px solid var(--border);}
+.editor-labels{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--border);}
+
+/* ── BADGES MODAL ── */
+#badges-panel{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;}
+#badges-panel.open{display:flex;}
+.badges-modal{background:var(--surface);border:1px solid var(--border-strong);border-radius:16px;padding:2rem;max-width:480px;width:90%;max-height:80vh;overflow-y:auto;}
+.badges-modal h3{font-family:'Fraunces',serif;font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:.4rem;}
+.badges-modal p{font-size:13px;color:var(--muted);margin-bottom:1.5rem;}
+.badges-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.badge-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:1rem;text-align:center;transition:border-color .2s;}
+.badge-item.earned{border-color:var(--amber);}
+.badge-item.locked{opacity:.4;filter:grayscale(1);}
+.badge-ico{font-size:2rem;margin-bottom:.4rem;}
+.badge-name{font-size:11px;font-weight:600;color:var(--text);}
+.badge-desc{font-size:10px;color:var(--muted);margin-top:2px;}
+.close-modal{display:block;margin-top:1.25rem;background:var(--surface2);border:1px solid var(--border-strong);color:var(--text);padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-align:center;width:100%;}
+
+/* ── THEME PICKER ── */
+.theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:.9rem 0;}
+.tcard{border-radius:var(--r);overflow:hidden;border:2px solid transparent;cursor:pointer;transition:border-color .2s;}
+.tcard:hover{border-color:var(--accent);}
+.tprev{height:80px;display:flex;flex-direction:column;padding:9px;gap:4px;}
+.tbar{height:7px;border-radius:3px;opacity:.75;}
+.tline{height:4px;border-radius:2px;opacity:.5;}
+.tline.s{width:60%;}
+.tname{font-size:11px;font-weight:600;color:var(--muted);padding:5px 7px;background:var(--surface);text-align:center;}
+
+/* ── CONFETTI ── */
+.confetti-piece{position:fixed;width:8px;height:8px;border-radius:2px;pointer-events:none;z-index:500;animation:confetti-fall 2.5s ease-in forwards;}
+@keyframes confetti-fall{0%{opacity:1;transform:translateY(0) rotate(0deg);}100%{opacity:0;transform:translateY(100vh) rotate(720deg);}}
+
+/* ── MOBILE ── */
+@media(max-width:740px){
+  .layout{grid-template-columns:1fr;}
+  .sidebar{display:none;}
+  .cgrid,.editor-body{grid-template-columns:1fr;}
+  .editor-input{border-right:none;border-bottom:1px solid var(--border);}
+  #hud .hud-prog-wrap{max-width:120px;}
+  .theme-grid{grid-template-columns:1fr 1fr;}
+  .badges-grid{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="hud-logo">🐍 <span>Django Blog</span></div>
+  <div class="hud-prog-wrap">
+    <div class="hud-prog-bar"><div class="hud-prog-fill" id="prog-fill" style="width:0%"></div></div>
+    <div class="hud-prog-label" id="prog-label">Paso 0 de 12 completados</div>
+  </div>
+  <div class="hud-right">
+    <div class="hud-stat"><span class="ico">⚡</span><span id="xp-count">0</span> XP</div>
+    <div class="hud-stat" style="cursor:pointer" onclick="openBadges()"><span class="ico">🏅</span><span id="badge-count">0</span>/8</div>
+    <div class="hud-stat"><span class="ico">🔥</span><span id="streak-count">0</span></div>
+  </div>
+</div>
+
+<div class="xp-popup" id="xp-popup">+XP</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">⚡ Tutorial interactivo · 12 pasos</div>
+  <h1>Crea tu blog con<br><em>Python y Django</em></h1>
+  <p class="hero-sub">Aprende a programar desde cero, gana XP, desbloquea badges y publica tu web en internet. Sin experiencia previa.</p>
+
+  <div class="stats-row">
+    <div class="stat-pill"><div class="dot dot-blue"></div>12 pasos</div>
+    <div class="stat-pill"><div class="dot dot-teal"></div>Editor en vivo</div>
+    <div class="stat-pill"><div class="dot dot-amber"></div>Badges y XP</div>
+  </div>
+
+  <a href="#paso1" class="hero-cta">Empezar la aventura →</a>
+</section>
+
+<!-- BADGES PANEL -->
+<div id="badges-panel">
+  <div class="badges-modal">
+    <h3>Tus logros 🏅</h3>
+    <p>Completa los tests de cada paso para desbloquear badges.</p>
+    <div class="badges-grid" id="badges-grid"></div>
+    <button class="close-modal" onclick="closeBadges()">Cerrar</button>
+  </div>
+</div>
+
+<div class="layout">
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-title">Pasos</div>
+  <ul class="sb-nav" id="sb-nav">
+    <li><a href="#paso1" class="active" data-step="1"><span class="sb-num">1</span>Internet<span class="sb-check">✓</span></a></li>
+    <li><a href="#paso2" data-step="2"><span class="sb-num">2</span>Terminal<span class="sb-check">✓</span></a></li>
+    <li><a href="#paso3" data-step="3"><span class="sb-num">3</span>Instalación<span class="sb-check">✓</span></a></li>
+    <li><a href="#paso4" data-step="4"><span class="sb-num">4</span>Python básico<span class="sb-check">✓</span></a></li>
+    <li><a href="#paso5" data-step="5"><span class="sb-num">5</span>Primer proyecto<span class="sb-check">✓</span></a></li>
+    <li><a href="#paso6" data-step="6"><span class="sb-num">6</span>Modelos<span class="sb-check">✓</span></a></li>
+    <li><a href="#paso7" data-step="7"><span class="sb-num">7</span>URLs y vistas<span class="sb-check">✓</span></a></li>
+    <li><a href="#paso8" data-step="8"><span class="sb-num">8</span>Plantillas HTML<span class="sb-check">✓</span></a></li>
+    <li><a href="#paso9" data-step="9"><span class="sb-num">9</span>CSS — diseño<span class="sb-check">✓</span></a></li>
+    <li><a href="#paso10" data-step="10"><span class="sb-num">10</span>Formularios<span class="sb-check">✓</span></a></li>
+    <li><a href="#paso11" data-step="11"><span class="sb-num">11</span>Git y GitHub<span class="sb-check">✓</span></a></li>
+    <li><a href="#paso12" data-step="12"><span class="sb-num">12</span>Publicar online<span class="sb-check">✓</span></a></li>
+  </ul>
+</aside>
+
+<main class="content">
+
+<!-- ══════════ PASO 1 ══════════ -->
+<section class="step-section" id="paso1">
+  <div class="step-header">
+    <div class="step-num-badge n1">1</div>
+    <div class="step-meta">
+      <div class="step-meta-label">Fundamentos</div>
+      <h2>Cómo funciona internet</h2>
+      <p>Antes de crear tu web, entiende qué pasa cuando alguien la visita.</p>
+    </div>
+    <div class="step-xp-badge">⚡ 50 XP</div>
+  </div>
+
+  <p>Cuando escribes <span class="ic">https://google.com</span> y pulsas Enter, en décimas de segundo sucede una conversación entre tu ordenador y un servidor en otro país.</p>
+
+  <div class="diagram">
+    <div class="flow">
+      <div class="fb">Tu navegador</div><div class="fa">→</div>
+      <div class="fb hl">Petición HTTP</div><div class="fa">→</div>
+      <div class="fb">Servidor</div><div class="fa">→</div>
+      <div class="fb hl">Respuesta HTML</div><div class="fa">→</div>
+      <div class="fb">Tu pantalla</div>
+    </div>
+  </div>
+
+  <div class="cgrid">
+    <div class="ccard"><div class="ico">📖</div><h4>DNS</h4><p>Traduce <span class="ic">google.com</span> a una IP como <span class="ic">142.250.80.46</span>. Es la agenda de internet.</p></div>
+    <div class="ccard"><div class="ico">📨</div><h4>HTTP / HTTPS</h4><p>El protocolo de comunicación entre navegador y servidor. HTTPS cifra la conversación.</p></div>
+    <div class="ccard"><div class="ico">🖥️</div><h4>Servidor</h4><p>Ordenador siempre encendido que almacena tu web y la envía cuando alguien la pide.</p></div>
+    <div class="ccard"><div class="ico">🐍</div><h4>Django</h4><p>Recibe peticiones, consulta la base de datos y devuelve las páginas de tu blog. Tú pones las reglas.</p></div>
+  </div>
+
+  <div class="quiz-box" data-answer="b" data-step="1" data-xp="50" data-badge="explorer">
+    <div class="quiz-label">🎯 Test — Paso 1 · Gana 50 XP</div>
+    <div class="quiz-q">¿Qué hace el DNS cuando escribes "google.com" en tu navegador?</div>
+    <div class="quiz-opts">
+      <div class="qopt" data-opt="a"><span class="opt-l">A</span>Envía correos entre servidores automáticamente</div>
+      <div class="qopt" data-opt="b"><span class="opt-l">B</span>Traduce "google.com" a una dirección IP numérica</div>
+      <div class="qopt" data-opt="c"><span class="opt-l">C</span>Almacena una copia de la web en tu ordenador</div>
+    </div>
+    <div class="quiz-fb"></div>
+    <div class="quiz-next"><a class="qnext-btn" href="#paso2">Paso 2 →</a><div class="xp-reward">⚡ +50 XP ganados</div></div>
+  </div>
+</section><hr class="sep">
+
+<!-- ══════════ PASO 2 ══════════ -->
+<section class="step-section" id="paso2">
+  <div class="step-header">
+    <div class="step-num-badge n2">2</div>
+    <div class="step-meta">
+      <div class="step-meta-label">Herramientas</div>
+      <h2>La terminal</h2>
+      <p>Tu primera herramienta de programador. Texto puro, órdenes reales.</p>
+    </div>
+    <div class="step-xp-badge">⚡ 50 XP</div>
+  </div>
+
+  <div class="cgrid">
+    <div class="ccard"><div class="ico">🪟</div><h4>Windows</h4><p>Pulsa <span class="ic">Win + R</span>, escribe <span class="ic">cmd</span> y Enter.</p></div>
+    <div class="ccard"><div class="ico">🍎</div><h4>Mac / Linux</h4><p>Pulsa <span class="ic">Cmd + Espacio</span>, escribe <span class="ic">Terminal</span>.</p></div>
+  </div>
+
+  <div class="terminal">
+    <div class="t-bar"><div class="t-dots"><span class="cd1"></span><span class="cd2"></span><span class="cd3"></span></div><div class="t-label">Terminal — comandos esenciales</div></div>
+    <pre>
+<span class="tp">$</span> <span class="tc">pwd</span>            <span class="cm"># carpeta actual</span>
+<span class="to">/Users/ana</span>
+
+<span class="tp">$</span> <span class="tc">ls</span>             <span class="cm"># listar archivos (dir en Windows)</span>
+<span class="to">Desktop  Documents  mi-blog</span>
+
+<span class="tp">$</span> <span class="tc">mkdir mi-blog</span>  <span class="cm"># crear carpeta</span>
+<span class="tp">$</span> <span class="tc">cd mi-blog</span>     <span class="cm"># entrar en la carpeta</span>
+<span class="tp">$</span> <span class="tc">cd ..</span>          <span class="cm"># volver atrás</span></pre>
+  </div>
+
+  <div class="quiz-box" data-answer="c" data-step="2" data-xp="50">
+    <div class="quiz-label">🎯 Test — Paso 2 · Gana 50 XP</div>
+    <div class="quiz-q">¿Qué comando se usa para <strong style="color:var(--text)">crear una carpeta</strong> en la terminal?</div>
+    <div class="quiz-opts">
+      <div class="qopt" data-opt="a"><span class="opt-l">A</span><span class="ic">ls</span> — lista los archivos</div>
+      <div class="qopt" data-opt="b"><span class="opt-l">B</span><span class="ic">cd</span> — cambia de carpeta</div>
+      <div class="qopt" data-opt="c"><span class="opt-l">C</span><span class="ic">mkdir</span> — crea una carpeta</div>
+    </div>
+    <div class="quiz-fb"></div>
+    <div class="quiz-next"><a class="qnext-btn" href="#paso3">Paso 3 →</a><div class="xp-reward">⚡ +50 XP ganados</div></div>
+  </div>
+</section><hr class="sep">
+
+<!-- ══════════ PASO 3 ══════════ -->
+<section class="step-section" id="paso3">
+  <div class="step-header">
+    <div class="step-num-badge n3">3</div>
+    <div class="step-meta">
+      <div class="step-meta-label">Instalación</div>
+      <h2>Instalar Python y Django</h2>
+      <p>Prepara tu ordenador. Solo hay que hacerlo una vez.</p>
+    </div>
+    <div class="step-xp-badge">⚡ 75 XP</div>
+  </div>
+
+  <h3>1 · Descargar Python</h3>
+  <a href="https://www.python.org/downloads/" target="_blank" class="link-card">
+    <span class="lc-ico">🐍</span>
+    <div class="lc-txt"><strong>python.org/downloads</strong><span>Python 3.12+ · Gratis · Windows / Mac / Linux</span></div><span class="lc-arr">↗</span>
+  </a>
+  <div class="info-card warn"><div class="cl">⚠️ Windows</div><p>Durante la instalación, marca <strong style="color:var(--text)">"Add Python to PATH"</strong> antes de hacer clic en instalar. Sin esto Python no funcionará en la terminal.</p></div>
+
+  <h3>2 · Editor de código</h3>
+  <a href="https://code.visualstudio.com/" target="_blank" class="link-card">
+    <span class="lc-ico">📝</span>
+    <div class="lc-txt"><strong>Visual Studio Code — code.visualstudio.com</strong><span>Gratuito · El más popular entre principiantes y profesionales</span></div><span class="lc-arr">↗</span>
+  </a>
+
+  <h3>3 · Entorno virtual + Django</h3>
+  <div class="terminal">
+    <div class="t-bar"><div class="t-dots"><span class="cd1"></span><span class="cd2"></span><span class="cd3"></span></div><div class="t-label">Terminal — dentro de tu carpeta de proyecto</div></div>
+    <pre>
+<span class="tp">$</span> <span class="tc">python3 -m venv myvenv</span>
+
+<span class="cm"># Mac / Linux:</span>
+<span class="tp">$</span> <span class="tc">source myvenv/bin/activate</span>
+<span class="cm"># Windows:</span>
+<span class="tp">$</span> <span class="tc">myvenv\Scripts\activate</span>
+
+<span class="th">(myvenv)</span> <span class="tp">$</span> <span class="tc">pip install django</span>
+<span class="to">Successfully installed Django-5.0.6  ✅</span></pre>
+  </div>
+
+  <div class="quiz-box" data-answer="a" data-step="3" data-xp="75" data-badge="installer">
+    <div class="quiz-label">🎯 Test — Paso 3 · Gana 75 XP</div>
+    <div class="quiz-q">¿Para qué sirve el <strong style="color:var(--text)">entorno virtual</strong>?</div>
+    <div class="quiz-opts">
+      <div class="qopt" data-opt="a"><span class="opt-l">A</span>Aislar los paquetes del proyecto sin afectar al resto del sistema</div>
+      <div class="qopt" data-opt="b"><span class="opt-l">B</span>Acelerar la velocidad de Python</div>
+      <div class="qopt" data-opt="c"><span class="opt-l">C</span>Compilar el código Python a un ejecutable</div>
+    </div>
+    <div class="quiz-fb"></div>
+    <div class="quiz-next"><a class="qnext-btn" href="#paso4">Paso 4 →</a><div class="xp-reward">⚡ +75 XP ganados</div></div>
+  </div>
+</section><hr class="sep">
+
+<!-- ══════════ PASO 4 — EDITOR EN VIVO ══════════ -->
+<section class="step-section" id="paso4">
+  <div class="step-header">
+    <div class="step-num-badge n4">4</div>
+    <div class="step-meta">
+      <div class="step-meta-label">Lenguaje</div>
+      <h2>Introducción a Python</h2>
+      <p>Prueba el código directamente aquí, sin instalar nada.</p>
+    </div>
+    <div class="step-xp-badge">⚡ 100 XP</div>
+  </div>
+
+  <p>Python es el lenguaje con el que controlarás Django. Veamos los fundamentos — y puedes <strong style="color:var(--text)">ejecutar los ejemplos aquí mismo</strong>.</p>
+
+  <h3>Variables y tipos de datos</h3>
+  <div class="editor-wrap" id="ed1">
+    <div class="editor-header">
+      <span class="editor-title">▶ Editor Python en vivo</span>
+      <button class="editor-run" onclick="runPython('ed1')">▶ Ejecutar</button>
+    </div>
+    <div class="editor-body">
+      <textarea class="editor-input" id="ed1-in" spellcheck="false">nombre = "Ana"
+edad = 17
+saludo = "Hola, " + nombre + "!"
+print(saludo)
+print("Tienes", edad, "años")
+
+# Las listas guardan varios valores
+frutas = ["manzana", "pera", "uva"]
+print("Primera fruta:", frutas[0])</textarea>
+      <div class="editor-output" id="ed1-out">↑ Pulsa Ejecutar para ver el resultado</div>
+    </div>
+    <div class="editor-labels">
+      <div class="editor-split-label">Código</div>
+      <div class="editor-split-label">Salida</div>
+    </div>
+  </div>
+
+  <h3>Funciones y condicionales</h3>
+  <div class="editor-wrap" id="ed2">
+    <div class="editor-header">
+      <span class="editor-title">▶ Editor Python en vivo</span>
+      <button class="editor-run" onclick="runPython('ed2')">▶ Ejecutar</button>
+    </div>
+    <div class="editor-body">
+      <textarea class="editor-input" id="ed2-in" spellcheck="false">def saludar(nombre):
+    return "¡Hola, " + nombre + "!"
+
+nota = 8
+if nota >= 5:
+    resultado = "Aprobado ✅"
+else:
+    resultado = "Suspenso ❌"
+
+print(saludar("Carlos"))
+print("Nota:", nota, "→", resultado)
+
+for fruta in ["🍎", "🍐", "🍇"]:
+    print("Fruta:", fruta)</textarea>
+      <div class="editor-output" id="ed2-out">↑ Pulsa Ejecutar para ver el resultado</div>
+    </div>
+    <div class="editor-labels">
+      <div class="editor-split-label">Código</div>
+      <div class="editor-split-label">Salida</div>
+    </div>
+  </div>
+
+  <div class="info-card mission">
+    <div class="cl">🚀 Misión</div>
+    <p>Modifica el editor de arriba: cambia el nombre, pon una nota diferente y añade una fruta nueva. Pulsa Ejecutar para ver el resultado.</p>
+  </div>
+
+  <div class="quiz-box" data-answer="b" data-step="4" data-xp="100" data-badge="pythonista">
+    <div class="quiz-label">🎯 Test — Paso 4 · Gana 100 XP</div>
+    <div class="quiz-q">¿Qué palabra clave define una función en Python?</div>
+    <div class="quiz-opts">
+      <div class="qopt" data-opt="a"><span class="opt-l">A</span><span class="ic">function</span></div>
+      <div class="qopt" data-opt="b"><span class="opt-l">B</span><span class="ic">def</span></div>
+      <div class="qopt" data-opt="c"><span class="opt-l">C</span><span class="ic">func</span></div>
+    </div>
+    <div class="quiz-fb"></div>
+    <div class="quiz-next"><a class="qnext-btn" href="#paso5">Paso 5 →</a><div class="xp-reward">⚡ +100 XP ganados</div></div>
+  </div>
+</section><hr class="sep">
+
+<!-- ══════════ PASO 5 ══════════ -->
+<section class="step-section" id="paso5">
+  <div class="step-header">
+    <div class="step-num-badge n5">5</div>
+    <div class="step-meta">
+      <div class="step-meta-label">Django</div>
+      <h2>Tu primer proyecto Django</h2>
+      <p>Crea el esqueleto del blog y enciende el servidor.</p>
+    </div>
+    <div class="step-xp-badge">⚡ 100 XP</div>
+  </div>
+
+  <div class="terminal">
+    <div class="t-bar"><div class="t-dots"><span class="cd1"></span><span class="cd2"></span><span class="cd3"></span></div><div class="t-label">Terminal</div></div>
+    <pre>
+<span class="th">(myvenv)</span> <span class="tp">$</span> <span class="tc">django-admin startproject myblog .</span>
+
+<span class="to">myblog/
+├── manage.py          ← mando a distancia de Django
+└── myblog/
+    ├── settings.py    ← configuración
+    ├── urls.py        ← mapa de URLs
+    └── wsgi.py        ← para el despliegue</span>
+
+<span class="th">(myvenv)</span> <span class="tp">$</span> <span class="tc">python manage.py runserver</span>
+<span class="to">Starting development server at <span class="th">http://127.0.0.1:8000/</span></span></pre>
+  </div>
+
+  <div class="info-card ok"><div class="cl">🚀 ¡Funciona!</div><p>Abre <span class="ic">http://127.0.0.1:8000</span> en tu navegador. Verás la bienvenida de Django. Solo tú puedes verla — está en tu ordenador.</p></div>
+
+  <div class="quiz-box" data-answer="c" data-step="5" data-xp="100">
+    <div class="quiz-label">🎯 Test — Paso 5 · Gana 100 XP</div>
+    <div class="quiz-q">¿Qué dirección debes abrir en el navegador para ver tu web en desarrollo?</div>
+    <div class="quiz-opts">
+      <div class="qopt" data-opt="a"><span class="opt-l">A</span>https://localhost.django.com</div>
+      <div class="qopt" data-opt="b"><span class="opt-l">B</span>http://0.0.0.0:8000</div>
+      <div class="qopt" data-opt="c"><span class="opt-l">C</span>http://127.0.0.1:8000</div>
+    </div>
+    <div class="quiz-fb"></div>
+    <div class="quiz-next"><a class="qnext-btn" href="#paso6">Paso 6 →</a><div class="xp-reward">⚡ +100 XP ganados</div></div>
+  </div>
+</section><hr class="sep">
+
+<!-- ══════════ PASO 6 ══════════ -->
+<section class="step-section" id="paso6">
+  <div class="step-header">
+    <div class="step-num-badge n6">6</div>
+    <div class="step-meta">
+      <div class="step-meta-label">Base de datos</div>
+      <h2>Modelos — tus datos</h2>
+      <p>Define cómo se guardan las entradas del blog.</p>
+    </div>
+    <div class="step-xp-badge">⚡ 100 XP</div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-top"><div class="code-dots"><span class="cd1"></span><span class="cd2"></span><span class="cd3"></span></div><div class="code-lang">blog/models.py</div></div>
+    <pre>
+<span class="kw">from</span> django.db <span class="kw">import</span> models
+<span class="kw">from</span> django.utils <span class="kw">import</span> timezone
+
+<span class="kw">class</span> <span class="pr">Post</span>(models.Model):
+    author    <span class="op">=</span> models.<span class="fn">ForeignKey</span>(<span class="st">'auth.User'</span>, on_delete<span class="op">=</span>models.CASCADE)
+    title     <span class="op">=</span> models.<span class="fn">CharField</span>(max_length<span class="op">=</span><span class="st">200</span>)
+    text      <span class="op">=</span> models.<span class="fn">TextField</span>()
+    published <span class="op">=</span> models.<span class="fn">DateTimeField</span>(blank<span class="op">=</span><span class="kw">True</span>, null<span class="op">=</span><span class="kw">True</span>)</pre>
+  </div>
+
+  <div class="terminal">
+    <div class="t-bar"><div class="t-dots"><span class="cd1"></span><span class="cd2"></span><span class="cd3"></span></div><div class="t-label">Aplicar a la base de datos</div></div>
+    <pre>
+<span class="th">(myvenv)</span> <span class="tp">$</span> <span class="tc">python manage.py makemigrations blog</span>
+<span class="th">(myvenv)</span> <span class="tp">$</span> <span class="tc">python manage.py migrate</span>
+<span class="to">Running migrations... OK ✓</span></pre>
+  </div>
+
+  <div class="quiz-box" data-answer="b" data-step="6" data-xp="100" data-badge="architect">
+    <div class="quiz-label">🎯 Test — Paso 6 · Gana 100 XP</div>
+    <div class="quiz-q">¿Qué hace <span class="ic">makemigrations</span>?</div>
+    <div class="quiz-opts">
+      <div class="qopt" data-opt="a"><span class="opt-l">A</span>Aplica los cambios directamente a la base de datos</div>
+      <div class="qopt" data-opt="b"><span class="opt-l">B</span>Crea un archivo con las instrucciones para cambiar la base de datos</div>
+      <div class="qopt" data-opt="c"><span class="opt-l">C</span>Crea una base de datos vacía desde cero</div>
+    </div>
+    <div class="quiz-fb"></div>
+    <div class="quiz-next"><a class="qnext-btn" href="#paso7">Paso 7 →</a><div class="xp-reward">⚡ +100 XP ganados</div></div>
+  </div>
+</section><hr class="sep">
+
+<!-- ══════════ PASO 7 ══════════ -->
+<section class="step-section" id="paso7">
+  <div class="step-header">
+    <div class="step-num-badge n7">7</div>
+    <div class="step-meta">
+      <div class="step-meta-label">Lógica web</div>
+      <h2>URLs y Vistas</h2>
+      <p>Conecta direcciones web con el código que genera las páginas.</p>
+    </div>
+    <div class="step-xp-badge">⚡ 100 XP</div>
+  </div>
+
+  <div class="diagram">
+    <div class="flow">
+      <div class="fb">Visita /</div><div class="fa">→</div>
+      <div class="fb hl">urls.py</div><div class="fa">→</div>
+      <div class="fb hl">views.py</div><div class="fa">→</div>
+      <div class="fb">template.html</div><div class="fa">→</div>
+      <div class="fb">Pantalla</div>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-top"><div class="code-dots"><span class="cd1"></span><span class="cd2"></span><span class="cd3"></span></div><div class="code-lang">blog/views.py</div></div>
+    <pre>
+<span class="kw">from</span> django.shortcuts <span class="kw">import</span> render
+<span class="kw">from</span> .models <span class="kw">import</span> Post
+
+<span class="kw">def</span> <span class="fn">post_list</span>(request):
+    posts <span class="op">=</span> Post.objects.<span class="fn">all</span>().<span class="fn">order_by</span>(<span class="st">'-published'</span>)
+    <span class="kw">return</span> <span class="fn">render</span>(request, <span class="st">'blog/post_list.html'</span>, {<span class="st">'posts'</span>: posts})</pre>
+  </div>
+
+  <div class="quiz-box" data-answer="a" data-step="7" data-xp="100">
+    <div class="quiz-label">🎯 Test — Paso 7 · Gana 100 XP</div>
+    <div class="quiz-q">¿Qué archivo conecta una URL con una función de Python?</div>
+    <div class="quiz-opts">
+      <div class="qopt" data-opt="a"><span class="opt-l">A</span><span class="ic">urls.py</span></div>
+      <div class="qopt" data-opt="b"><span class="opt-l">B</span><span class="ic">models.py</span></div>
+      <div class="qopt" data-opt="c"><span class="opt-l">C</span><span class="ic">settings.py</span></div>
+    </div>
+    <div class="quiz-fb"></div>
+    <div class="quiz-next"><a class="qnext-btn" href="#paso8">Paso 8 →</a><div class="xp-reward">⚡ +100 XP ganados</div></div>
+  </div>
+</section><hr class="sep">
+
+<!-- ══════════ PASO 8 ══════════ -->
+<section class="step-section" id="paso8">
+  <div class="step-header">
+    <div class="step-num-badge n8">8</div>
+    <div class="step-meta">
+      <div class="step-meta-label">Frontend</div>
+      <h2>Plantillas HTML</h2>
+      <p>La cara visible de tu blog. HTML + datos de Django.</p>
+    </div>
+    <div class="step-xp-badge">⚡ 100 XP</div>
+  </div>
+
+  <div class="editor-wrap" id="ed3">
+    <div class="editor-header">
+      <span class="editor-title">▶ Prueba el lenguaje de plantillas</span>
+      <button class="editor-run" onclick="runTemplate('ed3')">▶ Previsualizar</button>
+    </div>
+    <div class="editor-body">
+      <textarea class="editor-input" id="ed3-in" spellcheck="false"><!-- Así se muestra una variable -->
+<h1>{{ titulo }}</h1>
+
+<!-- Así se recorre una lista -->
+{% for post in posts %}
+  <article>
+    <h2>{{ post.title }}</h2>
+    <p>{{ post.text }}</p>
+  </article>
+{% endfor %}</textarea>
+      <div class="editor-output" id="ed3-out">↑ Pulsa Previsualizar</div>
+    </div>
+    <div class="editor-labels">
+      <div class="editor-split-label">Plantilla Django</div>
+      <div class="editor-split-label">Resultado simulado</div>
+    </div>
+  </div>
+
+  <div class="quiz-box" data-answer="b" data-step="8" data-xp="100" data-badge="templater">
+    <div class="quiz-label">🎯 Test — Paso 8 · Gana 100 XP</div>
+    <div class="quiz-q">¿Cómo se muestra el valor de una variable en una plantilla Django?</div>
+    <div class="quiz-opts">
+      <div class="qopt" data-opt="a"><span class="opt-l">A</span><span class="ic">&lt;% variable %&gt;</span></div>
+      <div class="qopt" data-opt="b"><span class="opt-l">B</span><span class="ic">{{ variable }}</span></div>
+      <div class="qopt" data-opt="c"><span class="opt-l">C</span><span class="ic">${variable}</span></div>
+    </div>
+    <div class="quiz-fb"></div>
+    <div class="quiz-next"><a class="qnext-btn" href="#paso9">Paso 9 →</a><div class="xp-reward">⚡ +100 XP ganados</div></div>
+  </div>
+</section><hr class="sep">
+
+<!-- ══════════ PASO 9 — CSS EN VIVO ══════════ -->
+<section class="step-section" id="paso9">
+  <div class="step-header">
+    <div class="step-num-badge n9">9</div>
+    <div class="step-meta">
+      <div class="step-meta-label">Diseño</div>
+      <h2>CSS — hazlo bonito</h2>
+      <p>Cambia colores, fuentes y diseño. En vivo, ahora mismo.</p>
+    </div>
+    <div class="step-xp-badge">⚡ 125 XP</div>
+  </div>
+
+  <p>CSS controla el aspecto visual de tu blog. Edita el panel de abajo y verás los cambios en tiempo real.</p>
+
+  <!-- CSS LIVE PREVIEW -->
+  <div class="editor-wrap" id="css-editor" style="border:none;">
+    <div class="editor-header">
+      <span class="editor-title">🎨 Editor CSS en vivo</span>
+      <button class="editor-run" onclick="applyCss()" style="background:var(--purple);">✨ Aplicar</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;min-height:280px;">
+      <textarea class="editor-input" id="css-in" spellcheck="false" oninput="applyCss()" style="min-height:280px;font-size:12px;">body {
+  font-family: Georgia, serif;
+  background: #f0f4f8;
+  color: #2d3748;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+.blog-header {
+  background: #2b6cb0;
+  color: white;
+  padding: 2rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+article {
+  background: white;
+  border-left: 4px solid #4299e1;
+  padding: 1.5rem;
+  margin-bottom: 1.2rem;
+  border-radius: 0 10px 10px 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+article h2 { color: #2b6cb0; }</textarea>
+      <div style="background:#f0f4f8;overflow:auto;">
+        <iframe id="css-preview" style="width:100%;height:280px;border:none;background:white;" srcdoc=""></iframe>
+      </div>
+    </div>
+    <div class="editor-labels">
+      <div class="editor-split-label">Tu CSS</div>
+      <div class="editor-split-label">Vista previa del blog</div>
+    </div>
+  </div>
+
+  <h3>Inspírate — estilos listos para usar</h3>
+  <div class="theme-grid">
+    <div class="tcard" onclick="applyTheme('dark')">
+      <div class="tprev" style="background:#1a1a2e;"><div class="tbar" style="background:#e94560;width:70%"></div><div class="tline" style="background:#eee"></div><div class="tline s" style="background:#eee"></div></div>
+      <div class="tname">Oscuro · Neon</div>
+    </div>
+    <div class="tcard" onclick="applyTheme('solarized')">
+      <div class="tprev" style="background:#fdf6e3;"><div class="tbar" style="background:#859900;width:70%"></div><div class="tline" style="background:#657b83"></div><div class="tline s" style="background:#657b83"></div></div>
+      <div class="tname">Solarized · Clásico</div>
+    </div>
+    <div class="tcard" onclick="applyTheme('purple')">
+      <div class="tprev" style="background:#f5f0ff;"><div class="tbar" style="background:#7c3aed;width:70%"></div><div class="tline" style="background:#4c1d95"></div><div class="tline s" style="background:#4c1d95"></div></div>
+      <div class="tname">Morado · Creativo</div>
+    </div>
+    <div class="tcard" onclick="applyTheme('warm')">
+      <div class="tprev" style="background:#fff9f0;"><div class="tbar" style="background:#e17055;width:70%"></div><div class="tline" style="background:#636e72"></div><div class="tline s" style="background:#636e72"></div></div>
+      <div class="tname">Cálido · Editorial</div>
+    </div>
+    <div class="tcard" onclick="applyTheme('github')">
+      <div class="tprev" style="background:#0d1117;"><div class="tbar" style="background:#58a6ff;width:70%"></div><div class="tline" style="background:#8b949e"></div><div class="tline s" style="background:#8b949e"></div></div>
+      <div class="tname">GitHub · Dev</div>
+    </div>
+    <div class="tcard" onclick="applyTheme('minimal')">
+      <div class="tprev" style="background:#fff;"><div class="tbar" style="background:#000;width:70%"></div><div class="tline" style="background:#555"></div><div class="tline s" style="background:#555"></div></div>
+      <div class="tname">Minimalista</div>
+    </div>
+  </div>
+
+  <h3>Recursos externos</h3>
+  <a href="https://fonts.google.com" target="_blank" class="link-card"><span class="lc-ico">🔤</span><div class="lc-txt"><strong>Google Fonts</strong><span>Miles de tipografías gratuitas para tu blog</span></div><span class="lc-arr">↗</span></a>
+  <a href="https://colorhunt.co" target="_blank" class="link-card"><span class="lc-ico">🎨</span><div class="lc-txt"><strong>Color Hunt</strong><span>Paletas de colores curadas y listas para usar</span></div><span class="lc-arr">↗</span></a>
+  <a href="https://getbootstrap.com" target="_blank" class="link-card"><span class="lc-ico">📦</span><div class="lc-txt"><strong>Bootstrap</strong><span>Framework CSS para diseños profesionales sin esfuerzo</span></div><span class="lc-arr">↗</span></a>
+
+  <div class="quiz-box" data-answer="c" data-step="9" data-xp="125" data-badge="designer">
+    <div class="quiz-label">🎯 Test — Paso 9 · Gana 125 XP</div>
+    <div class="quiz-q">¿Qué propiedad CSS cambia el <strong style="color:var(--text)">color de fondo</strong> de un elemento?</div>
+    <div class="quiz-opts">
+      <div class="qopt" data-opt="a"><span class="opt-l">A</span><span class="ic">color: #f5f5f5</span></div>
+      <div class="qopt" data-opt="b"><span class="opt-l">B</span><span class="ic">border: #f5f5f5</span></div>
+      <div class="qopt" data-opt="c"><span class="opt-l">C</span><span class="ic">background: #f5f5f5</span></div>
+    </div>
+    <div class="quiz-fb"></div>
+    <div class="quiz-next"><a class="qnext-btn" href="#paso10">Paso 10 →</a><div class="xp-reward">⚡ +125 XP ganados</div></div>
+  </div>
+</section><hr class="sep">
+
+<!-- ══════════ PASO 10 ══════════ -->
+<section class="step-section" id="paso10">
+  <div class="step-header">
+    <div class="step-num-badge n10">10</div>
+    <div class="step-meta">
+      <div class="step-meta-label">Interactividad</div>
+      <h2>Formularios</h2>
+      <p>Añade un formulario para crear y publicar entradas.</p>
+    </div>
+    <div class="step-xp-badge">⚡ 100 XP</div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-top"><div class="code-dots"><span class="cd1"></span><span class="cd2"></span><span class="cd3"></span></div><div class="code-lang">blog/forms.py</div></div>
+    <pre>
+<span class="kw">from</span> django <span class="kw">import</span> forms
+<span class="kw">from</span> .models <span class="kw">import</span> Post
+
+<span class="kw">class</span> <span class="pr">PostForm</span>(forms.ModelForm):
+    <span class="kw">class</span> <span class="pr">Meta</span>:
+        model  <span class="op">=</span> Post
+        fields <span class="op">=</span> [<span class="st">'title'</span>, <span class="st">'text'</span>]</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-top"><div class="code-dots"><span class="cd1"></span><span class="cd2"></span><span class="cd3"></span></div><div class="code-lang">blog/views.py — añadir</div></div>
+    <pre>
+<span class="kw">def</span> <span class="fn">post_new</span>(request):
+    <span class="kw">if</span> request.method <span class="op">==</span> <span class="st">"POST"</span>:
+        form <span class="op">=</span> <span class="fn">PostForm</span>(request.POST)
+        <span class="kw">if</span> form.<span class="fn">is_valid</span>():
+            post           <span class="op">=</span> form.<span class="fn">save</span>(commit<span class="op">=</span><span class="kw">False</span>)
+            post.author    <span class="op">=</span> request.user
+            post.published <span class="op">=</span> timezone.<span class="fn">now</span>()
+            post.<span class="fn">save</span>()
+            <span class="kw">return</span> <span class="fn">redirect</span>(<span class="st">'post_list'</span>)
+    <span class="kw">else</span>:
+        form <span class="op">=</span> <span class="fn">PostForm</span>()
+    <span class="kw">return</span> <span class="fn">render</span>(request, <span class="st">'blog/post_edit.html'</span>, {<span class="st">'form'</span>: form})</pre>
+  </div>
+
+  <div class="quiz-box" data-answer="b" data-step="10" data-xp="100">
+    <div class="quiz-label">🎯 Test — Paso 10 · Gana 100 XP</div>
+    <div class="quiz-q">¿Qué método HTTP usa un formulario cuando el usuario pulsa "Enviar"?</div>
+    <div class="quiz-opts">
+      <div class="qopt" data-opt="a"><span class="opt-l">A</span>GET</div>
+      <div class="qopt" data-opt="b"><span class="opt-l">B</span>POST</div>
+      <div class="qopt" data-opt="c"><span class="opt-l">C</span>PUT</div>
+    </div>
+    <div class="quiz-fb"></div>
+    <div class="quiz-next"><a class="qnext-btn" href="#paso11">Paso 11 →</a><div class="xp-reward">⚡ +100 XP ganados</div></div>
+  </div>
+</section><hr class="sep">
+
+<!-- ══════════ PASO 11 — GIT ══════════ -->
+<section class="step-section" id="paso11">
+  <div class="step-header">
+    <div class="step-num-badge n11">11</div>
+    <div class="step-meta">
+      <div class="step-meta-label">Control de versiones</div>
+      <h2>Git y GitHub</h2>
+      <p>Guarda el historial de tu código y súbelo a la nube.</p>
+    </div>
+    <div class="step-xp-badge">⚡ 125 XP</div>
+  </div>
+
+  <div class="cgrid">
+    <div class="ccard"><div class="ico">📸</div><h4>Git</h4><p>Guarda "fotos" de tu código. Si algo se rompe, puedes volver atrás. Se instala en tu ordenador.</p></div>
+    <div class="ccard"><div class="ico">☁️</div><h4>GitHub</h4><p>Almacena tu código Git en la nube. Actúa como copia de seguridad y permite el despliegue.</p></div>
+  </div>
+
+  <a href="https://git-scm.com/downloads" target="_blank" class="link-card"><span class="lc-ico">📥</span><div class="lc-txt"><strong>Descargar Git — git-scm.com/downloads</strong><span>Gratis · Windows / Mac / Linux</span></div><span class="lc-arr">↗</span></a>
+  <a href="https://github.com" target="_blank" class="link-card"><span class="lc-ico">🐙</span><div class="lc-txt"><strong>Crear cuenta en GitHub — github.com</strong><span>Gratuito para repositorios públicos</span></div><span class="lc-arr">↗</span></a>
+
+  <h3>Flujo completo — primer push</h3>
+  <div class="terminal">
+    <div class="t-bar"><div class="t-dots"><span class="cd1"></span><span class="cd2"></span><span class="cd3"></span></div><div class="t-label">Terminal</div></div>
+    <pre>
+<span class="cm"># 1. Configurar Git (solo la primera vez)</span>
+<span class="tp">$</span> <span class="tc">git config --global user.name "Tu Nombre"</span>
+<span class="tp">$</span> <span class="tc">git config --global user.email "tu@email.com"</span>
+
+<span class="cm"># 2. Crear .gitignore para no subir cosas innecesarias</span>
+<span class="cm">#    Escribe esto en el archivo .gitignore:</span>
+<span class="to">myvenv/
+__pycache__/
+*.pyc
+db.sqlite3
+.env</span>
+
+<span class="cm"># 3. Inicializar y primer commit</span>
+<span class="tp">$</span> <span class="tc">git init</span>
+<span class="tp">$</span> <span class="tc">git add .</span>
+<span class="tp">$</span> <span class="tc">git commit -m "primer commit"</span>
+
+<span class="cm"># 4. Conectar con GitHub (crea el repo en github.com primero)</span>
+<span class="tp">$</span> <span class="tc">git remote add origin https://github.com/TU-USUARIO/mi-blog.git</span>
+<span class="tp">$</span> <span class="tc">git branch -M main</span>
+<span class="tp">$</span> <span class="tc">git push -u origin main</span>
+<span class="to">✅ ¡Código subido a GitHub!</span></pre>
+  </div>
+
+  <div class="info-card tip"><div class="cl">💡 Los 3 comandos de cada día</div>
+    <ul>
+      <li><span class="ic">git add .</span> — prepara los cambios</li>
+      <li><span class="ic">git commit -m "mensaje"</span> — toma la "foto"</li>
+      <li><span class="ic">git push</span> — sube a GitHub</li>
+    </ul>
+  </div>
+
+  <div class="quiz-box" data-answer="a" data-step="11" data-xp="125" data-badge="git-hero">
+    <div class="quiz-label">🎯 Test — Paso 11 · Gana 125 XP</div>
+    <div class="quiz-q">¿Qué hace <span class="ic">git commit -m "mensaje"</span>?</div>
+    <div class="quiz-opts">
+      <div class="qopt" data-opt="a"><span class="opt-l">A</span>Guarda una "foto" del estado actual del código en el historial local</div>
+      <div class="qopt" data-opt="b"><span class="opt-l">B</span>Sube el código a GitHub directamente</div>
+      <div class="qopt" data-opt="c"><span class="opt-l">C</span>Descarga los cambios de GitHub</div>
+    </div>
+    <div class="quiz-fb"></div>
+    <div class="quiz-next"><a class="qnext-btn" href="#paso12">Paso 12 →</a><div class="xp-reward">⚡ +125 XP ganados</div></div>
+  </div>
+</section><hr class="sep">
+
+<!-- ══════════ PASO 12 ══════════ -->
+<section class="step-section" id="paso12">
+  <div class="step-header">
+    <div class="step-num-badge n12">12</div>
+    <div class="step-meta">
+      <div class="step-meta-label">Despliegue</div>
+      <h2>Publicar en internet</h2>
+      <p>Tu blog online, gratis, para que el mundo lo vea.</p>
+    </div>
+    <div class="step-xp-badge">⚡ 150 XP</div>
+  </div>
+
+  <a href="https://www.pythonanywhere.com/registration/register/beginner/" target="_blank" class="link-card"><span class="lc-ico">🐍</span><div class="lc-txt"><strong>Registrarse en PythonAnywhere — gratis</strong><span>Plan gratuito · 1 web app · Sin tarjeta de crédito</span></div><span class="lc-arr">↗</span></a>
+
+  <div class="dsteps" style="margin-top:1.25rem;">
+    <div class="dstep"><div class="ds-dot">1</div><div class="ds-body"><h4>Abrir consola Bash en PythonAnywhere</h4><p>En tu panel ve a <strong style="color:var(--text)">Consoles → Bash</strong>. Se abre una terminal en el navegador.</p></div></div>
+    <div class="dstep"><div class="ds-dot">2</div><div class="ds-body"><h4>Clonar tu repositorio</h4>
+      <div class="terminal" style="margin-top:.5rem;"><div class="t-bar"><div class="t-dots"><span class="cd1"></span><span class="cd2"></span><span class="cd3"></span></div><div class="t-label">PythonAnywhere — consola</div></div>
+      <pre>
+<span class="tp">$</span> <span class="tc">git clone https://github.com/TU-USUARIO/mi-blog.git</span>
+<span class="tp">$</span> <span class="tc">cd mi-blog</span>
+<span class="tp">$</span> <span class="tc">python -m venv myvenv && source myvenv/bin/activate</span>
+<span class="tp">$</span> <span class="tc">pip install django</span>
+<span class="tp">$</span> <span class="tc">python manage.py migrate && python manage.py collectstatic</span></pre></div>
+    </div></div>
+    <div class="dstep"><div class="ds-dot">3</div><div class="ds-body"><h4>Crear la Web App</h4><p>Ve a <strong style="color:var(--text)">Web → Add a new web app</strong>. Elige <span class="ic">Manual configuration</span> y Python 3.12. Apunta el virtualenv y el WSGI a tu proyecto.</p></div></div>
+    <div class="dstep"><div class="ds-dot">4</div><div class="ds-body"><h4>Pulsar Reload y ¡listo!</h4>
+      <div class="info-card ok" style="margin-top:.5rem;"><div class="cl">🌍 Tu URL pública</div><p style="font-family:var(--mono);font-size:14px;color:var(--accent);">https://TU-USUARIO.pythonanywhere.com</p></div>
+    </div></div>
+  </div>
+
+  <h3>Otras opciones gratuitas</h3>
+  <a href="https://railway.app" target="_blank" class="link-card"><span class="lc-ico">🚂</span><div class="lc-txt"><strong>Railway — railway.app</strong><span>Conecta GitHub y despliega automáticamente</span></div><span class="lc-arr">↗</span></a>
+  <a href="https://render.com" target="_blank" class="link-card"><span class="lc-ico">☁️</span><div class="lc-txt"><strong>Render — render.com</strong><span>Despliegue desde GitHub con PostgreSQL gratis</span></div><span class="lc-arr">↗</span></a>
+
+  <div class="quiz-box" data-answer="c" data-step="12" data-xp="150" data-badge="deployer">
+    <div class="quiz-label">🎯 Test — Paso 12 · Gana 150 XP</div>
+    <div class="quiz-q">Tras hacer <span class="ic">git push</span> desde tu ordenador, ¿qué debes hacer en PythonAnywhere para ver los cambios online?</div>
+    <div class="quiz-opts">
+      <div class="qopt" data-opt="a"><span class="opt-l">A</span>Nada, se actualiza solo automáticamente</div>
+      <div class="qopt" data-opt="b"><span class="opt-l">B</span>Borrar la web app y crearla de nuevo</div>
+      <div class="qopt" data-opt="c"><span class="opt-l">C</span>Ejecutar <span class="ic">git pull</span> en la consola de PythonAnywhere y pulsar Reload</div>
+    </div>
+    <div class="quiz-fb"></div>
+    <div class="quiz-next"><a class="qnext-btn" href="#inicio">🎉 ¡Tutorial completado!</a><div class="xp-reward">⚡ +150 XP ganados</div></div>
+  </div>
+
+  <div class="info-card ok" style="margin-top:1.5rem;">
+    <div class="cl">🎉 ¡Enhorabuena!</div>
+    <p>Has creado un blog con Python y Django, lo has diseñado con CSS, lo has versionado con Git + GitHub y está publicado en internet. ¡Eres oficialmente desarrollador/a web!</p>
+  </div>
+</section>
+
+</main>
+</div>
+
+<script>
+/* ─── STATE ─── */
+const state = { xp:0, steps:0, streak:0, badges:new Set(), lastAnswer:null };
+const TOTAL_STEPS = 12;
+
+const BADGES_DEF = [
+  {id:'explorer', ico:'🗺️', name:'Explorador', desc:'Completa el paso 1'},
+  {id:'installer', ico:'⚙️', name:'Instalador', desc:'Domina la instalación'},
+  {id:'pythonista',ico:'🐍', name:'Pythonista', desc:'Aprende Python'},
+  {id:'architect', ico:'🏗️', name:'Arquitecto', desc:'Diseña modelos'},
+  {id:'templater', ico:'📄', name:'Templater', desc:'Domina las plantillas'},
+  {id:'designer',  ico:'🎨', name:'Diseñador', desc:'Crea el CSS'},
+  {id:'git-hero',  ico:'🐙', name:'Git Hero', desc:'Domina Git'},
+  {id:'deployer',  ico:'🚀', name:'Deployer', desc:'Publica en internet'},
+];
+
+/* ─── HUD UPDATE ─── */
+function updateHUD(){
+  document.getElementById('xp-count').textContent = state.xp;
+  document.getElementById('badge-count').textContent = state.badges.size;
+  document.getElementById('streak-count').textContent = state.streak;
+  const pct = Math.round((state.steps/TOTAL_STEPS)*100);
+  document.getElementById('prog-fill').style.width = pct+'%';
+  document.getElementById('prog-label').textContent = `Paso ${state.steps} de ${TOTAL_STEPS} completados`;
+}
+
+/* ─── XP POPUP ─── */
+function showXP(amount){
+  const el = document.getElementById('xp-popup');
+  el.textContent = '+'+amount+' XP';
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),1800);
+}
+
+/* ─── CONFETTI ─── */
+function confetti(){
+  const colors=['#5B8FFF','#4ECDC4','#F5A623','#52D284','#FF6B6B','#A78BFA','#FFD700'];
+  for(let i=0;i<45;i++){
+    const el=document.createElement('div');
+    el.className='confetti-piece';
+    el.style.cssText=`left:${Math.random()*100}vw;top:-10px;background:${colors[Math.floor(Math.random()*colors.length)]};animation-delay:${Math.random()*.8}s;animation-duration:${1.8+Math.random()}s;`;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),3000);
+  }
+}
+
+/* ─── QUIZ ─── */
+document.querySelectorAll('.quiz-box').forEach(box=>{
+  const correct=box.dataset.answer;
+  const stepNum=parseInt(box.dataset.step);
+  const xpVal=parseInt(box.dataset.xp)||50;
+  const badgeId=box.dataset.badge||null;
+  const opts=box.querySelectorAll('.qopt');
+  const fb=box.querySelector('.quiz-fb');
+  const nxt=box.querySelector('.quiz-next');
+  let answered=false;
+
+  opts.forEach(opt=>{
+    opt.addEventListener('click',()=>{
+      if(answered)return;
+      answered=true;
+      opts.forEach(o=>o.classList.add('disabled'));
+      const isCorrect=opt.dataset.opt===correct;
+
+      if(isCorrect){
+        opt.classList.add('correct');
+        fb.textContent='✅ ¡Correcto! Sigue adelante.';
+        fb.className='quiz-fb show ok';
+        state.xp+=xpVal;
+        state.steps=Math.max(state.steps,stepNum);
+        state.streak++;
+        showXP(xpVal);
+        updateSidebarDone(stepNum);
+        if(badgeId&&!state.badges.has(badgeId)){
+          state.badges.add(badgeId);
+          setTimeout(()=>{
+            confetti();
+            alert('🏅 ¡Badge desbloqueado!\n'+(BADGES_DEF.find(b=>b.id===badgeId)?.name||badgeId));
+          },400);
+        }
+        if(state.steps===TOTAL_STEPS) setTimeout(()=>{ confetti(); alert('🎉 ¡Tutorial completado!\nXP total: '+state.xp); },500);
+      } else {
+        opt.classList.add('wrong');
+        box.querySelector(`[data-opt="${correct}"]`).classList.add('correct');
+        fb.textContent='❌ No es esa. La respuesta correcta está en verde. ¡Anótala!';
+        fb.className='quiz-fb show ko';
+        state.streak=0;
+      }
+      nxt.classList.add('show');
+      updateHUD();
+    });
+  });
+});
+
+/* ─── SIDEBAR DONE ─── */
+function updateSidebarDone(step){
+  const link=document.querySelector(`.sb-nav a[data-step="${step}"]`);
+  if(link) link.classList.add('done');
+}
+
+/* ─── SIDEBAR ACTIVE ─── */
+const sections=document.querySelectorAll('.step-section');
+const navLinks=document.querySelectorAll('.sb-nav a');
+new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      navLinks.forEach(l=>l.classList.remove('active'));
+      const l=document.querySelector(`.sb-nav a[href="#${e.target.id}"]`);
+      if(l)l.classList.add('active');
+    }
+  });
+},{threshold:.25,rootMargin:'-60px 0px -40% 0px'}).observe&&sections.forEach(s=>new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){navLinks.forEach(l=>l.classList.remove('active'));const l=document.querySelector(`.sb-nav a[href="#${e.target.id}"]`);if(l)l.classList.add('active');}});},{threshold:.2,rootMargin:'-60px 0px -40% 0px'}).observe(s));
+
+/* ─── BADGES PANEL ─── */
+function openBadges(){
+  const grid=document.getElementById('badges-grid');
+  grid.innerHTML=BADGES_DEF.map(b=>`
+    <div class="badge-item ${state.badges.has(b.id)?'earned':'locked'}">
+      <div class="badge-ico">${b.ico}</div>
+      <div class="badge-name">${b.name}</div>
+      <div class="badge-desc">${b.desc}</div>
+    </div>`).join('');
+  document.getElementById('badges-panel').classList.add('open');
+}
+function closeBadges(){ document.getElementById('badges-panel').classList.remove('open'); }
+
+/* ─── PYTHON SIMULATOR ─── */
+function runPython(edId){
+  const code=document.getElementById(edId+'-in').value;
+  const out=document.getElementById(edId+'-out');
+  const lines=[];
+  const fakeConsole={log:(...a)=>lines.push(a.join(' ')),error:(...a)=>lines.push('Error: '+a.join(' '))};
+  try{
+    const safe=code
+      .replace(/print\s*\(([\s\S]*?)\)/g,(_,args)=>`__out.push(String(${args.replace(/,/g,'+" "+')}))`  )
+      .replace(/def\s+(\w+)\s*\((.*?)\)\s*:/g,'function $1($2){')
+      .replace(/return\s+/g,'return ')
+      .replace(/for\s+(\w+)\s+in\s+(\w+)\s*:/g,'for(let $1 of $2){')
+      .replace(/if\s+(.*?)\s*:/g,'if($1){')
+      .replace(/else\s*:/g,'}else{')
+      .replace(/True/g,'true').replace(/False/g,'false')
+      .replace(/(\w+)\s*\+\=\s*/g,'$1+=')
+      .replace(/#.*/g,'');
+
+    const __out=[];
+    const fn=new Function('__out',safe+'\n');
+    fn(__out);
+    out.textContent=__out.length?__out.join('\n'):'(sin salida)';
+    out.className='editor-output has-output';
+  }catch(e){
+    out.textContent='Error: '+e.message+'\n\n(Nota: este simulador es simplificado. Algunos errores pueden ser del simulador, no de tu código.)';
+    out.className='editor-output error';
+  }
+}
+
+/* ─── TEMPLATE SIMULATOR ─── */
+function runTemplate(edId){
+  const tpl=document.getElementById(edId+'-in').value;
+  const out=document.getElementById(edId+'-out');
+  const ctx={
+    titulo:'Mi Blog',
+    posts:[
+      {title:'Primera entrada',text:'¡Hola mundo desde Django!'},
+      {title:'Aprendiendo Python',text:'Python es increíble y fácil de aprender.'},
+    ]
+  };
+  let html=tpl;
+  html=html.replace(/\{%\s*for\s+(\w+)\s+in\s+(\w+)\s*%\}([\s\S]*?)\{%\s*endfor\s*%\}/g,(_,v,list,body)=>{
+    const arr=ctx[list]||[];
+    return arr.map(item=>{
+      let b=body;
+      Object.keys(item).forEach(k=>{ b=b.replace(new RegExp('\\{\\{\\s*'+v+'\\.'+k+'\\s*\\}\\}','g'),item[k]); });
+      return b;
+    }).join('');
+  });
+  Object.keys(ctx).forEach(k=>{ if(typeof ctx[k]==='string') html=html.replace(new RegExp('\\{\\{\\s*'+k+'\\s*\\}\\}','g'),ctx[k]); });
+  out.innerHTML='<div style="font-size:12px;padding:0;background:white;color:#222;line-height:1.6;height:100%;overflow:auto;">'+html+'</div>';
+  out.className='editor-output has-output';
+}
+
+/* ─── CSS LIVE EDITOR ─── */
+const blogHTML=`<div class="blog-header"><h1>Mi Blog</h1><p>Un blog creado con Django</p></div>
+<article><h2>Primera entrada</h2><p>¡Hola mundo! Esta es mi primera entrada en el blog creado con Python y Django.</p></article>
+<article><h2>Aprendiendo Python</h2><p>Python es un lenguaje muy potente y fácil de aprender para principiantes.</p></article>`;
+
+function applyCss(){
+  const css=document.getElementById('css-in').value;
+  const frame=document.getElementById('css-preview');
+  frame.srcdoc=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${css}</style></head><body>${blogHTML}</body></html>`;
+}
+
+const THEMES={
+  dark:`body{font-family:'Courier New',monospace;background:#1a1a2e;color:#eee;max-width:720px;margin:0 auto;padding:2rem;}
+.blog-header{background:#16213e;border-bottom:3px solid #e94560;padding:2rem;margin-bottom:2rem;}
+.blog-header h1{color:#e94560;font-size:2rem;margin-bottom:.3rem;}
+.blog-header p{color:#a0aec0;}
+article{background:#16213e;border:1px solid #e94560;padding:1.5rem;margin-bottom:1rem;border-radius:4px;}
+article h2{color:#e94560;}`,
+  solarized:`body{font-family:Georgia,serif;background:#fdf6e3;color:#657b83;max-width:720px;margin:0 auto;padding:2rem;}
+.blog-header{background:#073642;color:#839496;padding:2rem;margin-bottom:2rem;border-radius:8px;}
+.blog-header h1{color:#268bd2;}
+article{background:#eee8d5;border-left:4px solid #859900;padding:1.5rem;margin-bottom:1rem;border-radius:0 8px 8px 0;}
+article h2{color:#b58900;}`,
+  purple:`body{font-family:'Segoe UI',sans-serif;background:#f5f0ff;color:#2d1b69;max-width:720px;margin:0 auto;padding:2rem;}
+.blog-header{background:linear-gradient(135deg,#7c3aed,#a78bfa);color:white;padding:2rem;border-radius:16px;margin-bottom:2rem;}
+.blog-header h1{font-size:2rem;margin-bottom:.3rem;}
+article{background:white;border-radius:12px;padding:1.5rem;margin-bottom:1rem;box-shadow:0 4px 20px rgba(124,58,237,.12);}
+article h2{color:#7c3aed;}`,
+  warm:`body{font-family:Georgia,serif;background:#fff9f0;color:#5a3e2b;max-width:720px;margin:0 auto;padding:2rem;}
+.blog-header{background:#e17055;color:white;padding:2rem;border-radius:8px;margin-bottom:2rem;}
+.blog-header h1{margin-bottom:.3rem;}
+article{background:white;border-top:3px solid #e17055;padding:1.5rem;margin-bottom:1rem;border-radius:0 0 8px 8px;}
+article h2{color:#c0392b;}`,
+  github:`body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#c9d1d9;max-width:720px;margin:0 auto;padding:2rem;}
+.blog-header{background:#161b22;border:1px solid #30363d;padding:2rem;border-radius:6px;margin-bottom:1.5rem;}
+.blog-header h1{color:#58a6ff;margin-bottom:.3rem;}
+.blog-header p{color:#8b949e;}
+article{background:#161b22;border:1px solid #30363d;padding:1.5rem;margin-bottom:1rem;border-radius:6px;}
+article h2{color:#58a6ff;}`,
+  minimal:`body{font-family:'Helvetica Neue',Helvetica,sans-serif;background:#fff;color:#111;max-width:640px;margin:0 auto;padding:2rem;}
+.blog-header{border-bottom:2px solid #000;padding-bottom:1rem;margin-bottom:2rem;}
+.blog-header h1{font-size:2rem;letter-spacing:-.02em;}
+.blog-header p{color:#666;font-size:.9rem;}
+article{padding:1.5rem 0;border-bottom:1px solid #eee;}
+article h2{font-size:1.2rem;margin-bottom:.5rem;}`
+};
+
+function applyTheme(name){
+  document.getElementById('css-in').value=THEMES[name]||'';
+  applyCss();
+}
+
+/* Init */
+applyCss();
+updateHUD();
+</script>
+</body>
+</html>
